@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>登录</title>
     <link rel="stylesheet" href="./bootstrap/bootstrap.min.css" />
@@ -88,38 +89,35 @@
     <script src="./lib/axios.js"></script>
     <script src="./js/common.js"></script>
     <script>
-   document.querySelector('#btn-login').addEventListener('click',async (e)=>{
-        // console.log(1111)
-        e.preventDefault()
-        const data=serialize(document.querySelector('form'),{hash:true})
-        console.log(data)
-       if(!data.username || data.username.trim()=='')  return    tips('用户名不能为空！') 
-
-       if(!data.password ||data.password.trim()=='') return tips('密码不能为空！')
-
-       if(data.password.length<6 || data.password.length>30)return tips('密码长度为6-30位，请核验')
-         
-      try {
-	const res= await axios.post('/login',data)
-	          if(res.message=='登录成功'){
-              localStorage.setItem('user-token',res.data.token)
-              localStorage.setItem('user-name',res.data.username)
-	          tips(res.message)
-            console.log(res)
-	            location.href='./index.html'
-	          }else{
-	            tips(res.message)
-	          }
+document.querySelector('#btn-login').addEventListener('click',async function(){
+    const data=serialize(document.querySelector('form'),{hash:true})
+  
+    
+    
+    if(!data.username|| data.username.trim()=='')return tips('用户名不能为空！')
+      if(!data.password ||data.password.trim()=='')return tips('密码不能为空！')
+    if( data.password.length<6 || data.password.length>30)return tips('密码为6至30位，请核验！')
+  
+     try {
+	 const res= await axios.post('/login',data)
+   console.log(res)
+	      if(res.message=='登录成功'){
+	        tips(res.message)
+          localStorage.setItem('user-name',res.data.username)
+          localStorage.setItem('user-token',res.data.token)
+	        setTimeout(function(){
+	        location.href='./index.html'
+	
+	      },3000)
+	      }else{
+	        tips(res.message)
+	      }
 } catch (error) {
   console.dir(error)
-  tips(error.response.data.message)
-	
+	tips(error.response.data.message)
 }
-        
-      })
-
-      
-
+    }
+  )
 
       
     </script>

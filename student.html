@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>学生</title>
     <link rel="stylesheet" href="./bootstrap/bootstrap.min.css" />
@@ -397,139 +398,150 @@
       const province = document.querySelector('[name=province]')
       const city = document.querySelector('[name=city]')
       const area = document.querySelector('[name=area]')
-      const title= document.querySelector('.modal-title')
-      const names= form.querySelectorAll('[name]')
-      // console.log(names)
+      const title = document.querySelector('.modal-title')
+      const names = form.querySelectorAll('[name]')
 
-      //渲染学生列表
       async function renderList() {
         const res = await axios.get('/students')
-        // console.log(res)
+        console.log(res)
+        document.querySelector('.total').innerHTML = res.data.length
         tbody.innerHTML = res.data
           .map((item) => {
+            item.gender == 0 ? (item.gender = '男') : (item.gender = '女')
             return `
           <tr>
                       <td>${item.name}</td>
                       <td>${item.age}</td>
-                      <td>${item.gender == 1 ? '女' : '男'}</td>
+                      <td>${item.gender}</td>
                       <td>第${item.group}组</td>
                       <td>${item.hope_salary}</td>
-                      <td>${item.salary}</td> 
+                      <td>${item.salary}</td>
                       <td>${item.province}${item.city}${item.area}</td>
                       <td>
-                        <a href="javascript:;" class="text-success mr-3" ""><i data-id="${
-                          item.id
-                        }" class="bi bi-pen" ></i></a>
-                        <a href="javascript:;" class="text-danger" "><i data-id="${
-                          item.id
-                        }" class="bi bi-trash" ></i></a>
+                        <a href="javascript:;" class="text-success mr-3"><i  data-id="${item.id}" class="bi bi-pen"></i></a>
+                        <a href="javascript:;" class="text-danger"><i data-id="${item.id}" class="bi bi-trash"></i></a>
                       </td>
-                    </tr>
-        `
+                    </tr> 
+          `
           })
           .join('')
-        document.querySelector('.total').innerHTML = res.data.length
       }
 
       renderList()
 
-      //设置添加学生
-      //1.显示弹出框
+      //  设置弹出框显示按钮
       btn01.addEventListener('click', function () {
+        title.innerHTML = '添加学员'
         form.reset()
         myModal.show()
+        getProvince()
+      })
+      //  添加删除按钮
+      // 利用事件委托
+      tbody.addEventListener('click', async function (e) {
+        if (e.target.classList.contains('bi-trash')) {
+          console.log(111)
+          const res = await axios.delete(`/students/${e.target.dataset.id}`)
+          // console.log(res)
+          renderList()
+        }
+        // 设置修改按钮
+        if (e.target.classList.contains('bi-pen')) {
+          // console.log(111)
+          submit.dataset.id=e.target.dataset.id
+          title.innerHTML = '修改学员'
+          myModal.show()
+
+          const res2 = await axios.get(`/students/${e.target.dataset.id}`)
+          console.log(res2)
+          //设置数据回显
+          names.forEach((item) => {
+            names[res2.data.gender + 1].checked = true
+            item.value = res2.data[item.name]
+          })
+          getProvince(res2.data.province)
+          getCity(res2.data.province, res2.data.city)
+          getArea(res2.data.province, res2.data.city, res2.data.area)
+        }
       })
 
-      //2.发送请求添加学员
+      //设置提交按钮功能
       submit.addEventListener('click', async function (e) {
-        console.log(1111)
         const data = serialize(form, { hash: true })
-        console.log(data)
         data.age = parseInt(data.age)
         data.gender = parseInt(data.gender)
         data.hope_salary = parseInt(data.hope_salary)
         data.salary = parseInt(data.salary)
         data.group = parseInt(data.group)
-        // console.log(data)
-        if(title.innerHTML=='添加学员'){
-          const res=await axios.post('/students',data)
-        }else{
-          const res3=await axios.put(`/students/${e.target.dataset.id}`,data)
-          console.log(res3)
-        }
-        renderList()
-        myModal.hide()
+        console.log(data)
+        if (title.innerHTML == '添加学员') {
+	          const res = await axios.post('/students',data)
+	          
+      }else{
+        const res3=await axios.put(`/students/${e.target.dataset.id}`,data)
+        console.log(res3)
+      }
+      myModal.hide()
+      renderList()
       })
-      //设置删除按钮
-      tbody.addEventListener('click', async function (e) {
-        if (e.target.classList.contains('bi-trash')) {
-          const res = await axios.delete(`/students/${e.target.dataset.id}`)
-          renderList()
-          
-        }else  if(e.target.classList.contains('bi-pen')){
-          title.innerHTML='修改学员'
-          submit.dataset.id=e.target.dataset.id
-            myModal.show()
-            const {data:resInfo}= await axios.get(`/students/${e.target.dataset.id}`)
-            console.log(resInfo)
-            getCity(resInfo.province,resInfo.city)
-            getArea(resInfo.province,resInfo.city,resInfo.area)
-            names.forEach(item=>{
-              
-                names[resInfo.gender+1].checked=true
-              
-              item.value=resInfo[item.name]
+
+      // 获取省份
+      async function getProvince(pro) {
+        const res = await axios.get('/api/province')
+        province.innerHTML =
+          `<option value="">--省份--</option>` +
+          res.data
+            .map((item) => {
+              return `
+    <option value="${item}">${item}</option>
+    `
             })
-          }
-         
-      })
-
-
-      //设置省市区
-      async function getProvince(){
-        const res=await axios.get('/api/province')
-        // console.log(res)
-        province.innerHTML=`<option value="">--省份--</option>`+res.data.map(item=>{
-          return `
-          <option value="${item}">${item}</option>
-          `
-        }).join('')
-      }
-      getProvince()
-
-      // 获取市
-      async function getCity(pro,cit){
-        const res=await axios.get('/api/city',{params:{pname:pro}})
-        // console.log(res)
-        city.innerHTML=`<option value="">--城市--</option>`+res.data.map(item=>{
-          return `
-          <option value="${item}">${item}</option>
-          `
-        }).join('')
-        if(cit){
-          city.value=cit
+            .join('')
+        if (pro) {
+          province.value = pro
         }
       }
-      //获取区
-      async function getArea(pro,cit,are){
-        const res=await axios.get('/api/area',{params:{pname:pro,cname:cit}})
-        // console.log(res)
-        area.innerHTML=`<option value="">--区--</option>`+res.data.map(item=>{
-          return `
-          <option value="${item}">${item}</option>
-          `
-        }).join('')
-        if(are){
-          area.value=are
+      // 获取城市
+      async function getCity(pro, cit) {
+        const res = await axios.get('/api/city', { params: { pname: pro } })
+        city.innerHTML =
+          `<option value="">--城市--</option>` +
+          res.data
+            .map((item) => {
+              return `
+    <option value="${item}">${item}</option>
+    `
+            })
+            .join('')
+        if (cit) {
+          city.value = cit
+        }
+      }
+      // 获取区
+      async function getArea(pro, cit, are) {
+        const res = await axios.get('/api/area', {
+          params: { pname: pro, cname: cit },
+        })
+        area.innerHTML =
+          `<option value="">--区--</option>` +
+          res.data
+            .map((item) => {
+              return `
+    <option value="${item}">${item}</option>
+    `
+            })
+            .join('')
+        if (are) {
+          area.value = are
         }
       }
 
-      province.addEventListener('change',function(){
+      province.addEventListener('change', function () {
         getCity(province.value)
-        getArea(province.value,city.value)
+        getArea()
       })
-      city.addEventListener('change',function(){
-        getArea(province.value,city.value)
+      city.addEventListener('change', function () {
+        getArea(province.value, city.value)
       })
     </script>
   </body>
